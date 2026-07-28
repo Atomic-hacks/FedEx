@@ -239,7 +239,9 @@ function SupportPage({ trackingNumber, onBack }: { trackingNumber: string; onBac
 }
 
 function AdminSidebar({ active, onExit }: { active: 'dashboard' | 'shipments' | 'messages' | 'email' | 'settings'; onExit: () => void }) {
-  return <aside><FedExMark light /><p className="admin-label">ADMIN PORTAL</p><a href="/admin/dashboard" className={active === 'dashboard' ? 'active' : ''}><span>▦</span> Dashboard</a><a href="/admin/shipments" className={active === 'shipments' ? 'active' : ''}><span>□</span> Shipments</a><a href="/admin/messages" className={active === 'messages' ? 'active' : ''}><span>◌</span> Messages</a><a href="/admin/shipments/new"><span>＋</span> Create shipment</a><button onClick={onExit}>← Exit portal</button></aside>
+  const [isOpen, setIsOpen] = useState(false)
+  const close = () => setIsOpen(false)
+  return <><button className="admin-mobile-menu" type="button" aria-expanded={isOpen} aria-controls="admin-navigation" onClick={() => setIsOpen((open) => !open)}><span aria-hidden="true">☰</span> Menu</button>{isOpen && <button className="admin-menu-backdrop" type="button" aria-label="Close navigation" onClick={close} />}<aside id="admin-navigation" className={`admin-sidebar ${isOpen ? 'admin-sidebar--open' : ''}`}><FedExMark light /><button className="admin-menu-close" type="button" onClick={close} aria-label="Close navigation">×</button><p className="admin-label">ADMIN PORTAL</p><a href="/admin/dashboard" className={active === 'dashboard' ? 'active' : ''} onClick={close}><span>▦</span> Dashboard</a><a href="/admin/shipments" className={active === 'shipments' ? 'active' : ''} onClick={close}><span>□</span> Shipments</a><a href="/admin/messages" className={active === 'messages' ? 'active' : ''} onClick={close}><span>◌</span> Messages</a><a href="/admin/shipments/new" onClick={close}><span>＋</span> Create shipment</a><button onClick={onExit}>← Exit portal</button></aside></>
 }
 
 function ShipmentsPage({ onExit }: { onExit: () => void }) {
