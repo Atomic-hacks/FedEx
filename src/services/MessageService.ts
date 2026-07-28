@@ -31,5 +31,10 @@ export const MessageService = {
     await supabaseRequest<void>(`conversations?id=eq.${conversationId}`, { method: 'PATCH', body: JSON.stringify({ last_message_at: new Date().toISOString() }) })
     return rows[0]
   },
-  markRead(conversationId: string) { return supabaseRequest<void>(`messages?conversation_id=eq.${conversationId}&read_at=is.null`, { method: 'PATCH', body: JSON.stringify({ read_at: new Date().toISOString() }) }) },
+  async markRead(conversationId: string) {
+    await Promise.all([
+      supabaseRequest<void>(`messages?conversation_id=eq.${conversationId}&sender_type=eq.customer&read_at=is.null`, { method: 'PATCH', body: JSON.stringify({ read_at: new Date().toISOString() }) }),
+      supabaseRequest<void>(`conversations?id=eq.${conversationId}`, { method: 'PATCH', body: JSON.stringify({ admin_unread_count: 0 }) }),
+    ])
+  },
 }

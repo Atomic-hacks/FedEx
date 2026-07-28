@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { TrackingService } from './services/TrackingService'
 import { MessageService } from './services/MessageService'
@@ -185,8 +185,12 @@ function NotFoundCard({ trackingNumber, onSupport, setupError }: { trackingNumbe
 }
 
 function SupportThread({ messages }: { messages: Message[] }) {
-  if (!messages.length) return null
-  return <div className="support-thread">{messages.map((message) => <article className={message.sender_type === 'admin' ? 'support-thread-admin' : ''} key={message.id}><small>{message.sender_type === 'admin' ? 'Support team' : 'You'} · {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(message.created_at))}</small><p>{message.body}</p></article>)}</div>
+  const threadRef = useRef<HTMLDivElement>(null)
+  const replyCount = messages.filter((message) => message.sender_type === 'admin').length
+  useEffect(() => {
+    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' })
+  }, [messages.length])
+  return <section className="support-conversation" aria-live="polite"><header><div><span>SECURE CONVERSATION</span><h2>Your messages</h2></div>{replyCount > 0 && <b>{replyCount} support {replyCount === 1 ? 'reply' : 'replies'}</b>}</header>{messages.length ? <div className="support-thread" ref={threadRef} role="log" aria-label="Support conversation">{messages.map((message) => <article className={message.sender_type === 'admin' ? 'support-thread-admin' : ''} key={message.id}><small>{message.sender_type === 'admin' ? 'Support team' : 'You'} · {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(message.created_at))}</small><p>{message.body}</p></article>)}</div> : <p className="support-awaiting">Your conversation is being opened. Support replies will appear here automatically.</p>}</section>
 }
 
 function SupportPage({ trackingNumber, onBack }: { trackingNumber: string; onBack: () => void }) {
@@ -197,6 +201,7 @@ function SupportPage({ trackingNumber, onBack }: { trackingNumber: string; onBac
   const [token, setToken] = useState<string | null>(() => queryToken ?? sessionStorage.getItem(`support-token:${trackingNumber}`))
   const [publicConversation, setPublicConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
+  const [copyState, setCopyState] = useState('')
   useEffect(() => {
     if (!token) return
     let cancelled = false
@@ -204,11 +209,11 @@ function SupportPage({ trackingNumber, onBack }: { trackingNumber: string; onBac
       try {
         const conversation = await MessageService.getPublicConversation(trackingNumber, token)
         if (!conversation) throw new Error('Invalid support link')
-        if (!cancelled) setPublicConversation(conversation)
+        if (!cancelled) { setPublicConversation(conversation); setSent(false) }
         const records = await MessageService.listPublicMessages(trackingNumber, token)
         if (!cancelled) setMessages(records)
       } catch (reason) {
-        if (!cancelled) setError(reason instanceof Error && reason.message !== 'Invalid support link' ? 'Your conversation loaded, but replies could not be retrieved. Run the support inbox SQL migration and try again.' : 'This secure support link is invalid or has expired.')
+        if (!cancelled) setError(reason instanceof Error && reason.message !== 'Invalid support link' ? 'We could not retrieve this conversation right now. Please refresh and try again.' : 'This secure support link is invalid or has expired.')
       }
     }
     const refreshMessages = () => MessageService.listPublicMessages(trackingNumber, token).then((records) => { if (!cancelled) setMessages(records) }).catch(() => undefined)
@@ -216,6 +221,12 @@ function SupportPage({ trackingNumber, onBack }: { trackingNumber: string; onBac
     const refresh = window.setInterval(refreshMessages, 5000)
     return () => { cancelled = true; window.clearInterval(refresh) }
   }, [trackingNumber, token])
+  const copyConversationLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopyState('Secure link copied.')
+    } catch { setCopyState('Copy this page address to keep your conversation link.') }
+  }
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const formElement = event.currentTarget
@@ -235,13 +246,13 @@ function SupportPage({ trackingNumber, onBack }: { trackingNumber: string; onBac
       }
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Message could not be sent.') } finally { setIsSending(false) }
   }
-  return <div className="tracking-page"><header className="sub-header"><FedExMark /><button onClick={onBack}>‹ Back to tracking</button><a href="#help">Help</a></header><main className="support-main"><p className="breadcrumb">SUPPORT <span>/</span> {trackingNumber}</p><h1>How can we help?</h1><p className="support-intro">Send a message about your shipment. Our team will reply through this secure conversation.</p><section className="support-card">{sent && !token ? <div className="sent-state"><div>✓</div><h2>Your message is on its way.</h2><p>Keep your secure support link to view our reply here.</p></div> : <><SupportThread messages={messages} /><form onSubmit={submit}><div className="support-shipment"><span>Shipment</span><b>{trackingNumber}</b></div>{!token && <div className="form-two"><label>Name<input name="name" required placeholder="Your full name" /></label><label>Email<input name="email" required type="email" placeholder="you@example.com" /></label></div>}{token && publicConversation && <div className="support-returning">Welcome back, {publicConversation.visitor_name}. <button type="button" onClick={() => navigator.clipboard.writeText(window.location.href)}>Copy secure conversation link</button></div>}<label>How can we help?<textarea name="message" required placeholder="Tell us what you need help with" rows={5} /></label>{error && <p className="form-error">{error}</p>}<button className="purple-button" type="submit" disabled={isSending || (!!token && !publicConversation)}>{isSending ? 'Sending…' : <>Send message <Arrow /></>}</button></form></>}</section></main></div>
+  return <div className="tracking-page"><header className="sub-header"><FedExMark /><button onClick={onBack}>‹ Back to tracking</button><a href="#help">Help</a></header><main className="support-main"><p className="breadcrumb">SUPPORT <span>/</span> {trackingNumber}</p><h1>How can we help?</h1><p className="support-intro">Send a message about your shipment. We’ll show replies from our support team in this secure conversation.</p><section className="support-card">{token && <SupportThread messages={messages} />}<form onSubmit={submit}><div className="support-shipment"><span>Shipment</span><b>{trackingNumber}</b></div>{!token && <div className="form-two"><label>Name<input name="name" required placeholder="Your full name" /></label><label>Email<input name="email" required type="email" placeholder="you@example.com" /></label></div>}{token && publicConversation && <div className="support-returning"><span>Welcome back, {publicConversation.visitor_name}. Replies refresh automatically.</span><button type="button" onClick={copyConversationLink}>Copy secure conversation link</button>{copyState && <small>{copyState}</small>}</div>}{sent && <p className="support-sent">Your message was sent. This page will update when support replies.</p>}<label>{token ? 'Send another message' : 'How can we help?'}<textarea name="message" required placeholder="Tell us what you need help with" rows={5} /></label>{error && <p className="form-error">{error}</p>}<button className="purple-button" type="submit" disabled={isSending || (!!token && !publicConversation)}>{isSending ? 'Sending…' : <>Send message <Arrow /></>}</button></form></section></main></div>
 }
 
 function AdminSidebar({ active, onExit }: { active: 'dashboard' | 'shipments' | 'messages' | 'email' | 'settings'; onExit: () => void }) {
   const [isOpen, setIsOpen] = useState(false)
   const close = () => setIsOpen(false)
-  return <><button className="admin-mobile-menu" type="button" aria-expanded={isOpen} aria-controls="admin-navigation" onClick={() => setIsOpen((open) => !open)}><span aria-hidden="true">☰</span> Menu</button>{isOpen && <button className="admin-menu-backdrop" type="button" aria-label="Close navigation" onClick={close} />}<aside id="admin-navigation" className={`admin-sidebar ${isOpen ? 'admin-sidebar--open' : ''}`}><FedExMark light /><button className="admin-menu-close" type="button" onClick={close} aria-label="Close navigation">×</button><p className="admin-label">ADMIN PORTAL</p><a href="/admin/dashboard" className={active === 'dashboard' ? 'active' : ''} onClick={close}><span>▦</span> Dashboard</a><a href="/admin/shipments" className={active === 'shipments' ? 'active' : ''} onClick={close}><span>□</span> Shipments</a><a href="/admin/messages" className={active === 'messages' ? 'active' : ''} onClick={close}><span>◌</span> Messages</a><a href="/admin/shipments/new" onClick={close}><span>＋</span> Create shipment</a><button onClick={onExit}>← Exit portal</button></aside></>
+  return <>{!isOpen && <button className="admin-mobile-menu" type="button" aria-expanded="false" aria-controls="admin-navigation" onClick={() => setIsOpen(true)}><span aria-hidden="true">☰</span>Menu</button>}{isOpen && <button className="admin-menu-backdrop" type="button" aria-label="Close navigation" onClick={close} />}<aside id="admin-navigation" className={`admin-sidebar ${isOpen ? 'admin-sidebar--open' : ''}`}><FedExMark light /><button className="admin-menu-close" type="button" onClick={close} aria-label="Close navigation">×</button><p className="admin-label">ADMIN PORTAL</p><a href="/admin/dashboard" className={active === 'dashboard' ? 'active' : ''} onClick={close}><span>▦</span> Dashboard</a><a href="/admin/shipments" className={active === 'shipments' ? 'active' : ''} onClick={close}><span>□</span> Shipments</a><a href="/admin/messages" className={active === 'messages' ? 'active' : ''} onClick={close}><span>◌</span> Messages</a><a href="/admin/shipments/new" onClick={close}><span>＋</span> Create shipment</a><button className="admin-exit" onClick={onExit}>← Exit portal</button></aside></>
 }
 
 function ShipmentsPage({ onExit }: { onExit: () => void }) {
@@ -270,6 +281,13 @@ function MessagesPage({ onExit }: { onExit: () => void }) {
     const refresh = window.setInterval(loadConversations, 15000)
     return () => window.clearInterval(refresh)
   }, [])
+  useEffect(() => {
+    if (!selected) return
+    let cancelled = false
+    const refreshMessages = () => MessageService.listMessages(selected.id).then((records) => { if (!cancelled) setMessages(records) }).catch(() => undefined)
+    const refresh = window.setInterval(refreshMessages, 5000)
+    return () => { cancelled = true; window.clearInterval(refresh) }
+  }, [selected?.id])
   const open = async (conversation: ConversationWithShipment) => {
     setSelected(conversation); setError('')
     try {
@@ -287,13 +305,13 @@ function MessagesPage({ onExit }: { onExit: () => void }) {
     if (!body) return
     setIsSending(true); setError('')
     try {
-      await MessageService.send(selected.id, body, 'admin')
-      setMessages(await MessageService.listMessages(selected.id))
+      const message = await MessageService.send(selected.id, body, 'admin')
+      setMessages((current) => [...current, message])
       formElement.reset(); loadConversations()
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Reply could not be sent.') } finally { setIsSending(false) }
   }
   const date = (value: string) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
-  return <div className="admin-page"><AdminSidebar active="messages" onExit={onExit} /><main><header className="admin-header"><div><p>CUSTOMER SUPPORT</p><h1>Messages</h1></div></header><section className="admin-panel inbox-panel">{error && <p className="form-error inbox-error">{error}</p>}<div className="conversation-list">{conversations.length ? conversations.map((conversation) => <button key={conversation.id} className={selected?.id === conversation.id ? 'active' : ''} onClick={() => open(conversation)}><span>{conversation.admin_unread_count > 0 ? 'NEW' : 'SUPPORT'}</span><b>{conversation.visitor_name}</b><small>{conversation.shipments?.tracking_number || 'Shipment'} · {date(conversation.last_message_at)}</small></button>) : <p>No customer conversations yet.</p>}</div><div className="conversation-thread">{selected ? <><header><div><span>{selected.shipments?.tracking_number || 'SHIPMENT'}</span><h2>{selected.visitor_name}</h2><p>{selected.visitor_email}</p></div></header><div className="message-thread">{messages.map((message) => <article className={message.sender_type === 'admin' ? 'message-admin' : 'message-customer'} key={message.id}><span>{message.sender_type === 'admin' ? 'Admin' : selected.visitor_name} · {date(message.created_at)}</span><p>{message.body}</p></article>)}</div><form onSubmit={reply}><textarea name="reply" required rows={4} placeholder="Write a reply to the customer" /><button className="purple-button" disabled={isSending}>{isSending ? 'Sending…' : 'Send reply'}</button></form></> : <div className="empty-dashboard"><div>◌</div><h3>Select a conversation</h3><p>Customer support messages will appear here.</p></div>}</div></section></main></div>
+  return <div className="admin-page"><AdminSidebar active="messages" onExit={onExit} /><main><header className="admin-header"><div><p>CUSTOMER SUPPORT</p><h1>Messages</h1></div></header><section className={`admin-panel inbox-panel ${selected ? 'inbox-panel--conversation-open' : ''}`}>{error && <p className="form-error inbox-error">{error}</p>}<div className="conversation-list">{conversations.length ? conversations.map((conversation) => <button key={conversation.id} className={selected?.id === conversation.id ? 'active' : ''} onClick={() => open(conversation)}><span>{conversation.admin_unread_count > 0 ? 'NEW' : 'SUPPORT'}</span><b>{conversation.visitor_name}</b><small>{conversation.shipments?.tracking_number || 'Shipment'} · {date(conversation.last_message_at)}</small></button>) : <p>No customer conversations yet.</p>}</div><div className="conversation-thread">{selected ? <><header><button type="button" className="mobile-conversation-back" onClick={() => { setSelected(null); setMessages([]) }}>‹ All conversations</button><div><span>{selected.shipments?.tracking_number || 'SHIPMENT'}</span><h2>{selected.visitor_name}</h2><p>{selected.visitor_email}</p></div></header><div className="message-thread" role="log" aria-label={`Conversation with ${selected.visitor_name}`}>{messages.map((message) => <article className={message.sender_type === 'admin' ? 'message-admin' : 'message-customer'} key={message.id}><span>{message.sender_type === 'admin' ? 'Support team' : selected.visitor_name} · {date(message.created_at)}</span><p>{message.body}</p></article>)}</div><form onSubmit={reply}><textarea name="reply" required rows={4} placeholder="Write a reply to the customer" /><button className="purple-button" disabled={isSending}>{isSending ? 'Sending…' : 'Send reply'}</button></form></> : <div className="empty-dashboard"><div>◌</div><h3>Select a conversation</h3><p>Customer support messages will appear here.</p></div>}</div></section></main></div>
 }
 
 function CreateShipmentPage({ onExit }: { onExit: () => void }) {
@@ -349,7 +367,15 @@ function ShipmentWorkspace({ trackingNumber, onExit }: { trackingNumber: string;
 }
 
 function DashboardPage({ onExit }: { onExit: () => void }) {
-  return <div className="admin-page"><AdminSidebar active="dashboard" onExit={onExit} /><main><header className="admin-header"><div><p>ADMIN PORTAL</p><h1>Shipment dashboard</h1></div><a className="purple-button" href="/admin/shipments/new">+ Create shipment</a></header><section className="admin-panel"><div className="empty-dashboard"><div>□</div><h3>Manage updates order by order</h3><p>Open a shipment to publish a customer-visible timeline update.</p><a className="outline-button" href="/admin/shipments">Open shipments</a></div></section></main></div>
+  const [shipments, setShipments] = useState<Shipment[]>([])
+  const [conversations, setConversations] = useState<ConversationWithShipment[]>([])
+  const [error, setError] = useState('')
+  useEffect(() => { Promise.all([ShipmentService.list(), MessageService.listConversations()]).then(([shipmentRecords, conversationRecords]) => { setShipments(shipmentRecords); setConversations(conversationRecords) }).catch(() => setError('Dashboard data could not be loaded.')) }, [])
+  const activeShipments = shipments.filter((shipment) => !['delivered', 'exception'].includes(shipment.status)).length
+  const attentionShipments = shipments.filter((shipment) => ['delayed', 'exception'].includes(shipment.status)).length
+  const unreadMessages = conversations.reduce((total, conversation) => total + conversation.admin_unread_count, 0)
+  const recentShipments = [...shipments].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()).slice(0, 5)
+  return <div className="admin-page"><AdminSidebar active="dashboard" onExit={onExit} /><main><header className="admin-header"><div><p>ADMIN PORTAL</p><h1>Shipment dashboard</h1></div><a className="purple-button" href="/admin/shipments/new">+ Create shipment</a></header>{error && <p className="form-error dashboard-error">{error}</p>}<section className="metric-grid dashboard-metrics"><div><span>ACTIVE SHIPMENTS</span><b>{activeShipments}</b><small>Currently in progress</small></div><div><span>NEEDS ATTENTION</span><b>{attentionShipments}</b><small>Delayed or exception shipments</small></div><div><span>UNREAD MESSAGES</span><b>{unreadMessages}</b><small>Customer support requests</small></div></section><section className="admin-panel dashboard-recent"><div className="panel-heading"><div><h2>Recent shipments</h2><p>Open a shipment to publish a customer-visible tracking update.</p></div><a className="plain-button" href="/admin/shipments">View all <Arrow /></a></div>{recentShipments.length ? <div className="dashboard-shipment-list">{recentShipments.map((shipment) => <a href={`/admin/shipments/${encodeURIComponent(shipment.tracking_number)}`} key={shipment.id}><div><span>{shipment.tracking_number}</span><b>{shipment.customer_name || 'Customer'}</b></div><em className={`status-pill status-pill--${shipment.status}`}>{shipment.status.replaceAll('_', ' ')}</em><Arrow /></a>)}</div> : <div className="empty-dashboard"><div>□</div><h3>No shipments yet</h3><p>Create your first shipment to start tracking deliveries.</p><a className="outline-button" href="/admin/shipments/new">Create shipment</a></div>}</section></main></div>
 }
 
 function AdminPage({ onExit }: { onExit: () => void }) {

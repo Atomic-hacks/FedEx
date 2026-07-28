@@ -15,7 +15,7 @@ The SQL schema enables Realtime for shipments, tracking events, conversations, a
 
 Use `/admin/shipments/new` to create a shipment, then `/admin/shipments` to open its workspace. “Publish visible update” adds an event to that shipment’s public tracking timeline.
 
-Customer conversations are handled at `/admin/messages`. Run [the support inbox migration](supabase/migrations/20260728_support_inbox.sql) to allow customers using their secure support link to read admin replies.
+Customer conversations are handled at `/admin/messages`. For an existing database, run [the customer reply visibility migration](supabase/migrations/20260728_customer_reply_visibility.sql) so customers using their secure support link can read admin replies.
 Run [the multiple-conversations migration](supabase/migrations/20260728_multiple_support_conversations.sql) to let a shipment receive more than one independent customer conversation.
 
 If you ran an earlier schema version and receive a row-level-security error while creating a shipment, run [supabase/disable-rls.sql](supabase/disable-rls.sql) once in the SQL editor.
