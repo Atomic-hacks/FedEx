@@ -7,7 +7,7 @@ create table public.admins (id uuid primary key references auth.users(id) on del
 create table public.shipments (
   id uuid primary key default gen_random_uuid(), tracking_number text not null unique,
   customer_name text, customer_email text, status public.shipment_status not null default 'created', current_location text,
-  estimated_delivery timestamptz, origin_city text not null, origin_country text not null, destination_city text not null,
+  estimated_delivery timestamptz, ship_date timestamptz, expected_delivery_date timestamptz, origin_city text not null, origin_country text not null, destination_city text not null,
   destination_country text not null, shipment_type text not null, carrier text, reference_number text, notes text, weight numeric, proof_image_url text,
   is_archived boolean not null default false, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
@@ -49,6 +49,7 @@ create or replace function public.get_tracking_shipment(input_tracking_number te
     'id', s.id, 'tracking_number', s.tracking_number, 'status', s.status, 'current_location', s.current_location,
     'estimated_delivery', s.estimated_delivery, 'origin_city', s.origin_city, 'origin_country', s.origin_country,
     'destination_city', s.destination_city, 'destination_country', s.destination_country, 'shipment_type', s.shipment_type, 'carrier', s.carrier, 'reference_number', s.reference_number, 'notes', s.notes,
+    'ship_date', s.ship_date, 'expected_delivery_date', s.expected_delivery_date,
     'weight', s.weight, 'proof_image_url', s.proof_image_url, 'is_archived', s.is_archived,
     'created_at', s.created_at, 'updated_at', s.updated_at,
     'tracking_events', coalesce((select jsonb_agg(jsonb_build_object(
