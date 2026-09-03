@@ -982,11 +982,7 @@ function ShipmentsPage({ onExit }: { onExit: () => void }) {
     const expectedISO = expectedRaw
       ? new Date(expectedRaw).toISOString()
       : null;
-    if (
-      shipISO &&
-      expectedISO &&
-      new Date(expectedISO) <= new Date(shipISO)
-    ) {
+    if (shipISO && expectedISO && new Date(expectedISO) <= new Date(shipISO)) {
       throw new Error("Expected delivery must be after ship date.");
     }
     await ShipmentService.update(shipment.id, {
@@ -1328,6 +1324,12 @@ function CreateShipmentPage({ onExit }: { onExit: () => void }) {
     // Validate ship/expected delivery dates and prepare ISO values
     const shipDateRaw = String(form.get("shipDate") || "").trim();
     const expectedRaw = String(form.get("expectedDelivery") || "").trim();
+    const eventDate = String(form.get("eventDate") || "").trim();
+    if (!eventDate) {
+      setMessage("Select the date and time for the first tracking update.");
+      setSaving(false);
+      return;
+    }
     const shipISO = shipDateRaw ? new Date(shipDateRaw).toISOString() : null;
     const expectedISO = expectedRaw
       ? new Date(expectedRaw).toISOString()
@@ -1385,13 +1387,14 @@ function CreateShipmentPage({ onExit }: { onExit: () => void }) {
             description: null,
             city: originCity,
             country: originCountry,
-            occurred_at: new Date().toISOString(),
+            occurred_at: eventDate
+              ? new Date(eventDate).toISOString()
+              : eventDate,
           }),
         ),
       );
       const eventCity = String(form.get("eventCity")) || originCity;
       const eventCountry = String(form.get("eventCountry")) || originCountry;
-      const eventDate = String(form.get("eventDate"));
       await ShipmentService.addEvent({
         shipment_id: shipment.id,
         title: eventStatusLabels[eventStatus],
@@ -1404,9 +1407,7 @@ function CreateShipmentPage({ onExit }: { onExit: () => void }) {
         ),
         city: eventCity,
         country: eventCountry,
-        occurred_at: eventDate
-          ? new Date(eventDate).toISOString()
-          : new Date().toISOString(),
+        occurred_at: eventDate ? new Date(eventDate).toISOString() : eventDate,
       });
       setMessage(`Shipment ${shipment.tracking_number} created successfully.`);
       formElement.reset();
@@ -1548,7 +1549,7 @@ function CreateShipmentPage({ onExit }: { onExit: () => void }) {
               </label>
               <label>
                 Update time
-                <input name="eventDate" type="datetime-local" />
+                <input name="eventDate" type="datetime-local" required />
               </label>
             </div>
             <label>
@@ -1626,11 +1627,13 @@ function ShipmentWorkspace({
     const expectedISO = expectedRaw
       ? new Date(expectedRaw).toISOString()
       : shipment.expected_delivery_date;
-    if (
-      shipISO &&
-      expectedISO &&
-      new Date(expectedISO) <= new Date(shipISO)
-    ) {
+    const eventDateRaw = String(form.get("eventDate") || "").trim();
+    if (!eventDateRaw) {
+      setMessage("Select the date and time for this tracking update.");
+      return;
+    }
+    const eventDateISO = new Date(eventDateRaw).toISOString();
+    if (shipISO && expectedISO && new Date(expectedISO) <= new Date(shipISO)) {
       setMessage("Expected delivery must be after ship date.");
       return;
     }
@@ -1650,7 +1653,7 @@ function ShipmentWorkspace({
         ),
         city,
         country,
-        occurred_at: new Date().toISOString(),
+        occurred_at: eventDateISO,
       });
       await ShipmentService.update(shipment.id, {
         status: String(form.get("status")) as ShipmentDetails["status"],
@@ -1768,6 +1771,10 @@ function ShipmentWorkspace({
                   <label>
                     Facility
                     <input name="facility" placeholder="Optional" />
+                  </label>
+                  <label>
+                    Update time
+                    <input name="eventDate" type="datetime-local" required />
                   </label>
                   <label>
                     Ship date
