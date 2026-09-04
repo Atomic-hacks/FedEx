@@ -18,14 +18,4 @@ export const TrackingService = {
       trackingNumber.trim().toUpperCase(),
     );
   },
-  async verifyEmail(trackingNumber: string, email: string) {
-    const { supabaseRequest } = await import("../lib/supabase-rest");
-    return supabaseRequest<boolean>("rpc/verify_tracking_email", {
-      method: "POST",
-      body: JSON.stringify({
-        input_tracking_number: trackingNumber.trim().toUpperCase(),
-        input_email: email.trim().toLowerCase(),
-      }),
-    });
-  },
 };

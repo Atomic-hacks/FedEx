@@ -53,9 +53,6 @@ function Arrow({ down = false }: { down?: boolean }) {
 function App() {
   const [path, setPath] = useState(window.location.pathname);
   const [trackingNumber, setTrackingNumber] = useState("");
-  const [pendingTracking, setPendingTracking] = useState<string | null>(null);
-  const [verificationError, setVerificationError] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
     const onPopState = () => setPath(window.location.pathname);
@@ -73,30 +70,7 @@ function App() {
     event.preventDefault();
     const value = normalizeTrackingNumber(trackingNumber);
     if (value) {
-      setVerificationError("");
-      setPendingTracking(value);
-    }
-  };
-
-  const verifyTracking = async (email: string) => {
-    if (!pendingTracking) return;
-    setIsVerifying(true);
-    setVerificationError("");
-    try {
-      const valid = await TrackingService.verifyEmail(pendingTracking, email);
-      if (!valid) {
-        setVerificationError(
-          "The provided email does not match this shipment.",
-        );
-        return;
-      }
-      sessionStorage.setItem(`tracking-access:${pendingTracking}`, "verified");
-      setPendingTracking(null);
-      go(`/tracking/${pendingTracking}`);
-    } catch {
-      setVerificationError("Unable to verify this shipment right now.");
-    } finally {
-      setIsVerifying(false);
+      go(`/tracking/${value}`);
     }
   };
 
@@ -135,11 +109,6 @@ function App() {
       trackingNumber={trackingNumber}
       onChange={setTrackingNumber}
       onTrack={onTrack}
-      pendingTracking={pendingTracking}
-      onCancelVerify={() => setPendingTracking(null)}
-      onVerify={verifyTracking}
-      verificationError={verificationError}
-      isVerifying={isVerifying}
     />
   );
 }
@@ -148,20 +117,10 @@ function HomePage({
   trackingNumber,
   onChange,
   onTrack,
-  pendingTracking,
-  onCancelVerify,
-  onVerify,
-  verificationError,
-  isVerifying,
 }: {
   trackingNumber: string;
   onChange: (value: string) => void;
   onTrack: (event: FormEvent) => void;
-  pendingTracking: string | null;
-  onCancelVerify: () => void;
-  onVerify: (email: string) => void;
-  verificationError: string;
-  isVerifying: boolean;
 }) {
   return (
     <div className="site-shell">
@@ -310,47 +269,6 @@ function HomePage({
         </div>
         <small>© 2026 Express. Designed for shipment tracking.</small>
       </footer>
-      {pendingTracking && (
-        <div className="verify-overlay" role="dialog" aria-modal="true">
-          <form
-            className="verify-modal"
-            onSubmit={(event) => {
-              event.preventDefault();
-              onVerify(String(new FormData(event.currentTarget).get("email")));
-            }}
-          >
-            <button
-              type="button"
-              className="close-modal"
-              onClick={onCancelVerify}
-            >
-              ×
-            </button>
-            <p className="eyebrow">VERIFY SHIPMENT</p>
-            <h2>Confirm your email</h2>
-            <p>
-              Enter the email address used for shipment <b>{pendingTracking}</b>{" "}
-              to view its details.
-            </p>
-            <label>
-              Email address
-              <input
-                type="email"
-                name="email"
-                required
-                placeholder="you@example.com"
-                autoFocus
-              />
-            </label>
-            {verificationError && (
-              <small className="form-error">{verificationError}</small>
-            )}
-            <button className="purple-button" disabled={isVerifying}>
-              {isVerifying ? "Verifying…" : "View shipment"}
-            </button>
-          </form>
-        </div>
-      )}
     </div>
   );
 }
