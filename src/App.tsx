@@ -30,12 +30,12 @@ const toLocalInputValue = (value: string | null) => {
   return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 16);
 };
 
-function FedExMark({ light = false }: { light?: boolean }) {
+function ExpressMark({ light = false }: { light?: boolean }) {
   return (
     <a
       className={`brand ${light ? "brand--light" : ""}`}
       href="/"
-      aria-label="FedEx home"
+      aria-label="Express home"
     >
       <span>Fed</span>
       <strong>Ex</strong>
@@ -167,7 +167,7 @@ function HomePage({
     <div className="site-shell">
       <header className="main-header">
         <div className="header-inner">
-          <FedExMark light />
+          <ExpressMark light />
           <nav className="main-nav" aria-label="Primary navigation">
             <a href="#shipping">
               Shipping <Arrow down />
@@ -219,8 +219,8 @@ function HomePage({
             <div className="orbit orbit-one" />
             <div className="orbit orbit-two" />
             <div className="package-box">
-              <span>FEDEX</span>
-              <b>EXPRESS</b>
+              <span>Express</span>
+              <b>Shipment</b>
               <i />
             </div>
             <div className="package-shadow" />
@@ -261,7 +261,7 @@ function HomePage({
             </a>
           </div>
           <div className="feature-art">
-            <img src="/fed4.webp" alt="FedEx delivery service" />
+            <img src="/fed4.webp" alt="Express delivery service" />
             <div className="art-label">
               <span>FAST</span>
               <b>ON THE WAY</b>
@@ -270,7 +270,7 @@ function HomePage({
         </section>
 
         <section className="news-section">
-          <p className="eyebrow">FEDEX UPDATES</p>
+          <p className="eyebrow">Express UPDATES</p>
           <h2>Tools to keep your business moving.</h2>
           <div className="news-grid">
             <article>
@@ -302,13 +302,13 @@ function HomePage({
       </main>
 
       <footer className="footer">
-        <FedExMark light />
+        <ExpressMark light />
         <div>
           <a href="#support">Customer Support</a>
           <a href="#terms">Terms of Use</a>
           <a href="#privacy">Privacy</a>
         </div>
-        <small>© 2026 FedEx. Designed for shipment tracking.</small>
+        <small>© 2026 Express. Designed for shipment tracking.</small>
       </footer>
       {pendingTracking && (
         <div className="verify-overlay" role="dialog" aria-modal="true">
@@ -394,7 +394,7 @@ function TrackingPage({
   return (
     <div className="tracking-page">
       <header className="sub-header">
-        <FedExMark />
+        <ExpressMark />
         <button onClick={onBack}>‹ Back to home</button>
         <a href="#help">Help</a>
       </header>
@@ -429,7 +429,7 @@ function TrackingPage({
         )}
       </main>
       <footer className="simple-footer">
-        © 2026 FedEx. All rights reserved.
+        © 2026 Express. All rights reserved.
       </footer>
     </div>
   );
@@ -783,7 +783,7 @@ function SupportPage({
   return (
     <div className="tracking-page">
       <header className="sub-header">
-        <FedExMark />
+        <ExpressMark />
         <button onClick={onBack}>‹ Back to tracking</button>
         <a href="#help">Help</a>
       </header>
@@ -902,7 +902,7 @@ function AdminSidebar({
         id="admin-navigation"
         className={`admin-sidebar ${isOpen ? "admin-sidebar--open" : ""}`}
       >
-        <FedExMark light />
+        <ExpressMark light />
         <button
           className="admin-menu-close"
           type="button"
@@ -1514,7 +1514,7 @@ function CreateShipmentPage({ onExit }: { onExit: () => void }) {
               </label>
               <label>
                 Carrier
-                <input name="carrier" placeholder="FedEx" />
+                <input name="carrier" placeholder="Express" />
               </label>
               <label>
                 Reference number
