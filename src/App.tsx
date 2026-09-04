@@ -35,11 +35,11 @@ function ExpressMark({ light = false }: { light?: boolean }) {
     <a
       className={`brand ${light ? "brand--light" : ""}`}
       href="/"
-      aria-label="Express home"
+      aria-label="Westline home"
     >
-      <span>Fed</span>
-      <strong>Ex</strong>
-      <small>Express</small>
+      <span>West</span>
+      <strong>line</strong>
+      <small>Logistics</small>
     </a>
   );
 }
@@ -165,10 +165,10 @@ function HomePage({
                   placeholder="Enter tracking number"
                   autoComplete="off"
                 />
-                <button type="submit">
-                  Track <Arrow />
-                </button>
               </div>
+              <button type="submit" className="tracking-submit">
+                Track <Arrow />
+              </button>
               <button type="button" className="multi-track">
                 TRACK MULTIPLE SHIPMENTS <span>›</span>
               </button>
@@ -178,8 +178,8 @@ function HomePage({
             <div className="orbit orbit-one" />
             <div className="orbit orbit-two" />
             <div className="package-box">
-              <span>Express</span>
-              <b>Shipment</b>
+              <span>Westline</span>
+              <b>Transit</b>
               <i />
             </div>
             <div className="package-shadow" />
@@ -220,7 +220,7 @@ function HomePage({
             </a>
           </div>
           <div className="feature-art">
-            <img src="/fed4.webp" alt="Express delivery service" />
+            <img src="/courier.jpg" alt="Westline delivery service" />
             <div className="art-label">
               <span>FAST</span>
               <b>ON THE WAY</b>
@@ -229,11 +229,11 @@ function HomePage({
         </section>
 
         <section className="news-section">
-          <p className="eyebrow">Express UPDATES</p>
+          <p className="eyebrow">WESTLINE UPDATES</p>
           <h2>Tools to keep your business moving.</h2>
           <div className="news-grid">
             <article>
-              <img src="/fed1.webp" alt="Business shipping solutions" />
+              <img src="/shipping.avif" alt="Business shipping solutions" />
               <p>BUSINESS SOLUTIONS</p>
               <h3>Smarter shipping starts here.</h3>
               <a href="#solutions">
@@ -249,7 +249,7 @@ function HomePage({
               </a>
             </article>
             <article>
-              <img src="/fed4.webp" alt="Small business delivery service" />
+              <img src="/cour.jpg" alt="Small business delivery service" />
               <p>SMALL BUSINESS</p>
               <h3>Big support for small businesses.</h3>
               <a href="#business">
@@ -267,7 +267,7 @@ function HomePage({
           <a href="#terms">Terms of Use</a>
           <a href="#privacy">Privacy</a>
         </div>
-        <small>© 2026 Express. Designed for shipment tracking.</small>
+        <small>© 2026 Westline. Designed for shipment tracking.</small>
       </footer>
     </div>
   );
@@ -347,7 +347,7 @@ function TrackingPage({
         )}
       </main>
       <footer className="simple-footer">
-        © 2026 Express. All rights reserved.
+        © 2026 Westline. All rights reserved.
       </footer>
     </div>
   );
@@ -1428,11 +1428,11 @@ function CreateShipmentPage({ onExit }: { onExit: () => void }) {
               </label>
               <label>
                 Shipment type
-                <input name="shipmentType" required placeholder="Express" />
+                <input name="shipmentType" required placeholder="Parcel" />
               </label>
               <label>
                 Carrier
-                <input name="carrier" placeholder="Express" />
+                <input name="carrier" placeholder="Westline" />
               </label>
               <label>
                 Reference number
